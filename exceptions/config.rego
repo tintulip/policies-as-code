@@ -1,5 +1,6 @@
 package fugue.regula.config
 
+# FIXME: Eventually remove these waivers as they are overpermissive
 waivers[waiver] {
     waiver := {
         "rule_name": "iam_permissive_attached_policy"
