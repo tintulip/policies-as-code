@@ -6,7 +6,7 @@ resource_type = "MULTIPLE"
 
 contains_local_exec(resource) {
 	provisioners = resource.provisioners[_]
-  resource.provisioners != []
+	resource.provisioners != []
 	provisioners.type == "local-exec"
 }
 
