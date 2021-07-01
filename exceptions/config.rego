@@ -13,8 +13,4 @@ waivers[waiver] {
     waiver := {
         "rule_name": "vpc_igw_creation_block"
     }
-} {
-    waiver := {
-        "rule_name": "alb_ssl_configuration"
-    }
 }
