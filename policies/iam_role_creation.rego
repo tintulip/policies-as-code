@@ -9,7 +9,7 @@ roles = fugue.resources("aws_iam_role")
 is_invalid(resource) {
   assume_role_policy = json.unmarshal(resource.assume_role_policy)
   statements = as_array(assume_role_policy)
-	statement := statements[_].Statement
+  statement := statements[_].Statement
   principal := statement[_].Principal
   not startswith(principal.AWS, "arn:aws:iam::620540024451:")
 }
