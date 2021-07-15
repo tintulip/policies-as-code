@@ -1,0 +1,22 @@
+rules:
+  - id: allow-verified-module-sources
+    languages:
+      - generic
+    message: Source $3 should be either local or a verified vendor
+    metadata:
+      category: security
+      technology:
+        - terraform
+    paths:
+      include:
+        - "*.tf"
+    patterns:
+      - pattern-inside: |
+          module "..." {
+            ...
+          }
+      - pattern-regex: source(\s)+=(\s)+"(.*)"
+      - metavariable-regex:
+          metavariable: $3
+          regex: ^(?!((\.){1,2}|terraform-aws-modules|cloudposse|github.com/tintulip)/)(.*)$
+    severity: ERROR
