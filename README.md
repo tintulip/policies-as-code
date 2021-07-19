@@ -2,7 +2,7 @@
 
 ## What is policies-as-code?
 
-Policies-as-code are rules to be applied in the trusted pipeline to detect misconfigurations within Terraform files. These set of rules govern the behaviour of a software service and allows decoupling between the policies and the software service which allows the policy to be updated independently from the software and build them at scale. The rules are written in [rego](https://www.openpolicyagent.org/docs/latest/policy-language/) and use OPA (open policy agent) for the policy engine. [conftest](https://www.conftest.dev/) is a utility that helps in writing tests against structured configuration data and relies upon the Rego language from OPA for policies.
+Policies-as-code are rules to be applied in the trusted pipeline to detect misconfigurations within Terraform files. These set of rules govern the behaviour of a software service and allows decoupling between the policies and the software service which allows the policy to be updated independently from the software and build them at scale. The rules are written in [rego](https://www.openpolicyagent.org/docs/latest/policy-language/) and use OPA (open policy agent) for the policy engine. [conftest](https://www.conftest.dev/) is a utility that helps in writing tests against structured configuration data and relies upon the Rego language from OPA for policies. [semgrep](https://semgrep.dev/) is a static analysis tool to help with finding bugs and enforcing code standards.
 
 ## Getting Started
 
@@ -22,6 +22,12 @@ Then conftest can be ran against the plan using the conftest binary:
 conftest test -p policies -p exceptions preproduction.json
 ```
 
+Semgrep can be [installed](https://github.com/returntocorp/semgrep#getting-started) in a variety of ways. The rules are executed against the source code itself and therefore can be run on a developer machine too.
+
+```bash
+semgrep --config=/path/to/policies-as-code/semgrep-rules .
+```
+
 ### Confectionery
 
 The policies are supported by using a library called [Confectioney](https://github.com/Cigna/confectionery/blob/main/README.md). These contain a collection of standardized [rules](https://github.com/Cigna/confectionery/tree/main/rules) used to manage and govern Terraform resources.
@@ -33,9 +39,9 @@ To leverage the library, the command used to run conftest slightly changes:
 conftest test -p policy -p policies -p exceptions --update "git::https://github.com/cigna/confectionery.git//rules/terraform?ref=v1.0.0" preproduction.json
 ```
 
-### Creating Rules
+### Creating Conftest Rules
 
-Rules are created in the [policies](./policies) directory. Rules must be packaged as `rules.<rule_name>`. More information about creating rules can be found [here](https://github.com/Cigna/confectionery/blob/main/rules/README.md#creating-or-modifying-rulespolicies)
+Rules for conftest are created in the [policies](./policies) directory. Rules must be packaged as `rules.<rule_name>`. More information about creating rules can be found [here](https://github.com/Cigna/confectionery/blob/main/rules/README.md#creating-or-modifying-rulespolicies)
 
 The input that rules receive is in two parts: `_plan` and `resources`. The plan contains all of the different configuration and keeps track of which module calls to make as well as any variables. The resources section keeps track of each individual resource, including the provider and type as well as its address.
 
@@ -80,9 +86,34 @@ The input that rules receive is in two parts: `_plan` and `resources`. The plan 
 }
 ```
 
-### Waivers/Exceptions
+### Waivers/Exceptions for Conftest
 
 Sometimes it may be necessary to temporarily suppress a rule. For this, the [config.rego](./exceptions/config.rego) contains a list of rules that are currently being ignored. More information on how to use exceptions can be found [here](https://github.com/Cigna/confectionery#how-to-use-exceptions)
+
+### Semgrep rules
+
+Rules for [Semgrep are written](https://semgrep.dev/docs/writing-rules/overview/) in yaml format. For terraform, the language is generic and patterns are matched.
+
+```yaml
+rules:
+  - id: example-id
+    languages:
+      - generic
+    message: example message
+    metadata:
+      category: security
+      technology:
+        - terraform
+    paths:
+      include:
+        - "*.tf"
+    patterns:
+      - pattern: |
+        resource "..." "..." {
+          ...
+        }
+    severity: ERROR
+```
 
 ## Running in the pipeline
 
@@ -90,4 +121,5 @@ This repository runs as a secondary source within AWS CodeBuild. Once a plan has
 
 ```bash
 - ./conftest test -p policy -p $CODEBUILD_SRC_DIR_policies/policies -p $CODEBUILD_SRC_DIR_policies/exceptions --update "git::https://github.com/cigna/confectionery.git//rules/terraform?ref=v1.0.0" preproduction.json
+- docker run --rm -v "$CODEBUILD_SRC_DIR:/src" -v "$CODEBUILD_SRC_DIR_policies/semgrep-rules/terraform:/policies" returntocorp/semgrep -c="p/terraform" -c="/policies" /src --error
 ```
